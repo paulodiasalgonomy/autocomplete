@@ -97,7 +97,7 @@
     if (query === '' || query === '*') {
         resultsTitle.textContent = 'Mais buscados';
     } else {
-        resultsTitle.textContent = `Quem buscou por "${query}", também buscou por:`;
+        resultsTitle.innerHTML = `Quem buscou por <strong>"${query}"</strong>, também buscou por:`;
     }
 
     // Personalize results (com tracking e TARGET_URL lógico)
