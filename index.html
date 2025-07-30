@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="icon" href="https://algonomy.com/wp-content/uploads/2020/11/favicon-75x75.png" sizes="32x32">
+    <title>Autocomplete Demo</title>
+</head>
+<body>
+    <main>
+        <header>
+            <img src="./img/head.png" alt="Header Image">
+        </header>
+        <div id="nav">
+            <div id="searchBar">
+                <form>
+                    <input type="text" id="searchInput" placeholder="O que você está procurando?" autocomplete="off">
+                </form>
+                <div id="autocompleteResults">
+                    <h4 id="resultsTitle">Mais buscados</h4>
+                    <ul id="resultsList">
+                    </ul>
+                </div>
+            </div>
+            <div id="account">
+                <img src="./img/account.png" alt="Account Icon">
+            </div>
+        <footer>
+            <img src="./img/footer.png" alt="Footer Image">
+        </footer>
+    </main>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const resultsList = document.getElementById('resultsList');
+    const autocompleteResults = document.getElementById('autocompleteResults');
+    const resultsTitle = document.getElementById('resultsTitle');
+
+    async function fetchSuggestions(query) {
+        const encodedQuery = encodeURIComponent(query);
+        const url = `https://recs.richrelevance.com/rrserver/api/find/v1/autocomplete/e20fd45b1e19a8c6?sessionId=algtestsession626960159444&userId=algtestuser338960393619&query=${encodedQuery}&lang=pt&start=0&rows=5`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            return data || [];
+        } catch (error) {
+            console.error("Erro ao buscar sugestões autocomplete:", error);
+            return [];
+        }
+    }
+
+    async function fetchPersonalizedSuggestions(query) {
+        const encodedQuery = encodeURIComponent(query);
+        const url = `https://integration.richrelevance.com/rrserver/api/personalize?apiKey=e20fd45b1e19a8c6&apiClientKey=ec266a79f27bd41c&sessionId=algtestsession742515373605&userId=algtestuser154595700590&placements=search_page.autocomplete_01|search_page.autocomplete_02&excludeHtml=true&searchTerm=${encodedQuery}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            const creatives = [];
+
+            if (data.placements && Array.isArray(data.placements)) {
+                data.placements.forEach(placement => {
+                    if (placement.creatives && Array.isArray(placement.creatives)) {
+                        placement.creatives.forEach(creative => {
+                            creatives.push(creative);
+                        });
+                    }
+                });
+            }
+
+            return creatives;
+        } catch (error) {
+            console.error("Erro ao buscar sugestões personalizadas:", error);
+            return [];
+        }
+    }
+
+    function highlightMatch(term, query) {
+        if (!query || query === '*') return term;
+        const regex = new RegExp(`(${query})`, 'ig');
+        return term.replace(regex, '<strong>$1</strong>');
+    }
+
+    function updateResults(personalized, suggestions, query) {
+    resultsList.innerHTML = '';
+
+    if (personalized.length === 0 && suggestions.length === 0) {
+        autocompleteResults.style.display = 'none';
+        return;
+    }
+
+    autocompleteResults.style.display = 'block';
+
+    // Título dinâmico
+    if (query === '' || query === '*') {
+        resultsTitle.textContent = 'Mais buscados';
+    } else {
+        resultsTitle.textContent = `Quem buscou por "${query}", também buscou por:`;
+    }
+
+    // Personalize results (com tracking e TARGET_URL lógico)
+    personalized.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'resultItem';
+        const highlighted = highlightMatch(item.TEXT, query);
+        const encodedText = encodeURIComponent(item.TEXT);
+
+        // URL lógica (fallback se TARGET_URL estiver vazio)
+        const url = item.TARGET_URL && item.TARGET_URL.trim() !== ''
+            ? item.TARGET_URL
+            : `https://www.riachuelo.com.br/busca?q=${encodedText}`;
+
+        // Tracking de clique
+        li.innerHTML = `
+            <p>
+                <a href="${url}" target="_blank" onclick="fetch('${item.trackingUrl}', { method: 'GET' }).catch(e => console.warn('Erro tracking', e))">
+                    <img class='icon' src='${item.CONTENT_URL}'/> ${highlighted}
+                </a>
+            </p>`;
+        resultsList.appendChild(li);
+    });
+
+    // Autocomplete results (sempre usando busca?q=terms)
+    suggestions.forEach(suggestion => {
+        const li = document.createElement('li');
+        li.className = 'resultItem';
+        const highlighted = highlightMatch(suggestion.terms, query);
+        const encodedTerm = encodeURIComponent(suggestion.terms);
+        const url = `https://www.riachuelo.com.br/busca?q=${encodedTerm}`;
+        li.innerHTML = `<p><a href="${url}" target="_blank">${highlighted}</a></p>`;
+        resultsList.appendChild(li);
+    });
+}
+
+
+    async function handleInput(event) {
+        const query = event.target.value.trim();
+        const finalQuery = query === '' ? '*' : query;
+
+        const [personalized, suggestions] = await Promise.all([
+            fetchPersonalizedSuggestions(finalQuery),
+            fetchSuggestions(finalQuery)
+        ]);
+
+        updateResults(personalized, suggestions, query);
+    }
+
+    searchInput.addEventListener('input', handleInput);
+
+    searchInput.addEventListener('focus', async () => {
+        const query = searchInput.value.trim();
+        const finalQuery = query === '' ? '*' : query;
+
+        const [personalized, suggestions] = await Promise.all([
+            fetchPersonalizedSuggestions(finalQuery),
+            fetchSuggestions(finalQuery)
+        ]);
+
+        updateResults(personalized, suggestions, query);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!document.getElementById('searchBar').contains(e.target)) {
+            autocompleteResults.style.display = 'none';
+        }
+    });
+</script>
+
+
+
+</body>
+</html>
