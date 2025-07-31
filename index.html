@@ -37,6 +37,7 @@
     const autocompleteResults = document.getElementById('autocompleteResults');
     const resultsTitle = document.getElementById('resultsTitle');
 
+    // GET Autocomplete Suggestions
     async function fetchSuggestions(query) {
         const encodedQuery = encodeURIComponent(query);
         const url = `https://recs.richrelevance.com/rrserver/api/find/v1/autocomplete/e20fd45b1e19a8c6?sessionId=algtestsession626960159444&userId=algtestuser338960393619&query=${encodedQuery}&lang=pt&start=0&rows=5`;
@@ -46,11 +47,11 @@
             const data = await response.json();
             return data || [];
         } catch (error) {
-            console.error("Erro ao buscar sugestões autocomplete:", error);
+            console.error("Erro ao buscar sugestões doautocomplete:", error);
             return [];
         }
     }
-
+    // GET Engage Suggestions
     async function fetchPersonalizedSuggestions(query) {
         const encodedQuery = encodeURIComponent(query);
         const url = `https://integration.richrelevance.com/rrserver/api/personalize?apiKey=e20fd45b1e19a8c6&apiClientKey=ec266a79f27bd41c&sessionId=algtestsession742515373605&userId=algtestuser154595700590&placements=search_page.autocomplete_01|search_page.autocomplete_02&excludeHtml=true&searchTerm=${encodedQuery}`;
@@ -69,20 +70,20 @@
                     }
                 });
             }
-
             return creatives;
         } catch (error) {
-            console.error("Erro ao buscar sugestões personalizadas:", error);
+            console.error("Erro ao buscar sugestões do Engage:", error);
             return [];
         }
     }
-
+    // Highlight matching terms in suggestions
     function highlightMatch(term, query) {
         if (!query || query === '*') return term;
         const regex = new RegExp(`(${query})`, 'ig');
         return term.replace(regex, '<strong>$1</strong>');
     }
 
+    // Update results in the UI
     function updateResults(personalized, suggestions, query) {
     resultsList.innerHTML = '';
 
@@ -90,7 +91,6 @@
         autocompleteResults.style.display = 'none';
         return;
     }
-
     autocompleteResults.style.display = 'block';
 
     // Título dinâmico
