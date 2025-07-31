@@ -121,17 +121,24 @@
             </p>`;
         resultsList.appendChild(li);
     });
+// Cria uma lista com os termos já exibidos no personalize para evitar duplicação
+const personalizedTerms = new Set(personalized.map(item => item.TEXT.trim().toLowerCase()));
 
-    // Autocomplete results (sempre usando busca?q=terms)
-    suggestions.forEach(suggestion => {
-        const li = document.createElement('li');
-        li.className = 'resultItem';
-        const highlighted = highlightMatch(suggestion.terms, query);
-        const encodedTerm = encodeURIComponent(suggestion.terms);
-        const url = `https://www.riachuelo.com.br/busca?q=${encodedTerm}`;
-        li.innerHTML = `<p><a href="${url}" target="_blank">${highlighted}</a></p>`;
-        resultsList.appendChild(li);
-    });
+// Autocomplete results (excluindo duplicatas)
+suggestions.forEach(suggestion => {
+    const term = suggestion.terms.trim().toLowerCase();
+
+    if (personalizedTerms.has(term)) return; // Ignora duplicados
+
+    const li = document.createElement('li');
+    li.className = 'resultItem';
+    const highlighted = highlightMatch(suggestion.terms, query);
+    const encodedTerm = encodeURIComponent(suggestion.terms);
+    const url = `https://www.riachuelo.com.br/busca?q=${encodedTerm}`;
+    li.innerHTML = `<p><a href="${url}" target="_blank">${highlighted}</a></p>`;
+    resultsList.appendChild(li);
+});
+
 }
 
 
